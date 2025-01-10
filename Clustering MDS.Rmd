@@ -1,0 +1,91 @@
+---
+title: "Clustering MDS"
+author: "Fajar Athallah Yusuf"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(dplyr)
+library(tinytex)
+dataC <- readxl::read_xlsx("C:/Users/ASUS/Documents/R Project/Kerjaan/Kerjaan/Data Clustering.xlsx")
+summary(dataC)
+```
+
+# Mengecek apakah ada nilai kosong apa tidak
+
+```{r}
+colSums(is.na(dataC))
+```
+
+# Mengecek tipe data untuk setiap peubah
+
+```{r}
+str(dataC)
+```
+
+# Menetukan jumlah cluster yang optimal menggunakan metode elbow
+
+```{r}
+# Memuat library yang diperlukan
+library(cluster)
+
+# Melakukan normalisasi data
+dataC_norm <- scale(dataC)
+
+# Menentukan jumlah cluster yang optimal dengan metode Elbow
+wss <- (nrow(dataC_norm)-1)*sum(apply(dataC_norm,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(dataC_norm, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+abline(v=3, col="red", lwd=2) # Menambahkan garis vertikal merah 
+
+
+
+```
+
+Berdasarkan grafik di atas, menunjukan jumlah cluster yang optimal yakni 3 cluster
+
+# Melakukan clustering
+
+```{r}
+# Melakukan clustering dengan K-means
+set.seed(123) # untuk hasil yang konsisten
+kmeans_result <- kmeans(dataC_norm, 3) # ganti 3 dengan jumlah cluster yang optimal
+
+# Menampilkan hasil clustering
+print(kmeans_result)
+```
+
+Terdapat 3 cluster yang terbentuk dengan masing-masing cluster memiliki jumlah elemen 20 untuk cluster 1, 50 untuk cluster 2, dan 71 untuk cluster 3
+
+# Visualisasi
+
+```{r}
+library(factoextra)
+# Memvisualisasikan hasil clustering
+fviz_cluster(kmeans_result, data = dataC_norm)
+```
+
+Berdasarkan visualisasi ini, dilihat cluster 1 berada di positif dim 1 yang menunjukan data memiliki karateristik yang lebih spesifik dan unik. Cluster 2 berada di sisi negatif dim 1 yang menunjukan data dengan karateristik serupa tapi berbeda dengan dua cluster lainnya. Cluster 3 berada di rentang negatif dan positif dim 1, tetapi sebagian besar positif untuk dim 1.
+
+Dim 1 memiliki nilai sebesar 58,5% dibandingkan dim 2 yang memiliki nilai sebesar 12%. Hal ini menunjukan dim 1 memiliki dampak yang signikan terhadap pembentukan cluster daripada dim 2
+
+```{r}
+# Memuat library yang diperlukan
+library(FactoMineR)
+library(factoextra)
+
+# Melakukan PCA
+res.pca <- PCA(dataC_norm, scale.unit=TRUE, ncp=2, graph=FALSE)
+
+# Menampilkan bobot variabel dalam komponen utama
+print(res.pca$var$coord)
+
+# Memvisualisasikan bobot variabel dalam komponen utama
+fviz_pca_var(res.pca, col.var="contrib", gradient.cols=c("#00AFBB", "#E7B800", "#FC4E07"), repel=TRUE)
+
+```
+
+Dari visualsasi ini, menunjukan apa saja variabel yang berkontribusi terhadap kedua komponen utama. Arah vektor menunjukan variabel mana berpengaruh terhadap komponen. kontribusi variabel ditunjukan oleh skala warna. variabel yang memiliki warna gelap memiliki kontribusi yang lebih besar.
